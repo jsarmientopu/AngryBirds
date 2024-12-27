@@ -9,6 +9,10 @@ class Bird {
     this.img = img;
   }
 
+  setPosition(x, y) {
+    Body.setPosition(this.body, createVector(x, y));
+  }
+
   show() {
     push();
     translate(this.body.position.x, this.body.position.y);
@@ -34,21 +38,23 @@ class Bird {
   }
 
   stop() {
-    console.log(this.body.velocity);
     return abs(this.body.velocity.x) < 10e-4;
   }
 }
 
 class Box {
-  constructor(x, y, w, h, type = "wood", options = {}) {
+  constructor(x, y, w, h, type = "stone", options = {}) {
     this.img = spriteSheet.getSprite(type);
     switch (type) {
       case "stone":
-        options = { ...options, friction: 1, density: 0.5 };
+        options = { ...options, friction: 2, density: 0.05 };
+        this.life = 3;
       case "glass":
-        options = { ...options, friction: 0.5, density: 0.001 };
+        options = { ...options, friction: 0.5, density: 0.01 };
+        this.life = 1;
       case "wood":
         options = { ...options, friction: 0.5, density: 0.01 };
+        this.life = 2;
     }
     this.body = Bodies.rectangle(x, y, w, h, options);
     this.w = w;
@@ -81,6 +87,7 @@ class Ground extends Box {
 
 class SlingShot {
   constructor(bird, img) {
+    this.bird = bird;
     this.sling = Constraint.create({
       pointA: { x: bird.body.position.x, y: bird.body.position.y },
       bodyB: bird.body,
@@ -92,22 +99,47 @@ class SlingShot {
   }
 
   show() {
-    push();
     if (this.sling.bodyB) {
+      push();
       strokeWeight(10);
-      stroke("brown"),
+      stroke("#40140c"),
         line(
           this.sling.pointA.x + 30,
           this.sling.pointA.y,
           this.sling.bodyB.position.x,
           this.sling.bodyB.position.y
         );
+
+      strokeWeight(30);
       line(
-        this.sling.pointA.x - 30,
-        this.sling.pointA.y,
         this.sling.bodyB.position.x,
+        this.sling.bodyB.position.y,
+        this.sling.bodyB.position.x +
+          (this.sling.pointA.x > this.sling.bodyB.position.x - 30 ? -25 : 25),
         this.sling.bodyB.position.y
       );
+      pop();
+    } else {
+      push();
+      fill("#40140c"),
+        translate(this.sling.pointA.x - 10, this.sling.pointA.y - 5);
+      rect(0, 0, 60, 20);
+      pop();
+    }
+  }
+
+  showUpperPart() {
+    push();
+    if (this.sling.bodyB) {
+      strokeWeight(10);
+      stroke("#40140c"),
+        line(
+          this.sling.pointA.x - 30,
+          this.sling.pointA.y,
+          this.sling.bodyB.position.x +
+            (this.sling.pointA.x > this.sling.bodyB.position.x - 30 ? -25 : 25),
+          this.sling.bodyB.position.y
+        );
     }
     translate(this.sling.pointA.x, (13 * height) / 16 - 75);
 
@@ -118,7 +150,6 @@ class SlingShot {
       rectMode(CENTER);
       rect(0, 0, this.w, this.h);
     }
-
     pop();
   }
 
@@ -246,7 +277,6 @@ class Map {
 
   show() {
     for (const box of this.boxes) {
-      console.log(box);
       box.show();
     }
   }

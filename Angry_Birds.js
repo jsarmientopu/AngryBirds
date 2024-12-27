@@ -7,19 +7,20 @@ const {
   Body,
   Constraint,
   Events,
+  Composite,
+  Composites,
 } = Matter;
 
 let engine,
   world,
   ground,
-  boxes = [],
-  boxImg,
   slingshotImg,
-  birdImg = [],
   slingshot,
   mc,
   spriteSheet,
-  map;
+  map,
+  birdsLevel,
+  bird = [];
 
 function preload() {
   backgroundSpriteSheet = loadImage("img/background.png");
@@ -37,8 +38,7 @@ function preload() {
 function setup() {
   const canvas = createCanvas(windowWidth / 1, windowHeight / 1);
 
-  boxImg = loadImage("img/box.png");
-  birdImg = [loadImage("img/red.png"), loadImage("img/yellow.png")];
+  // boxImg = loadImage("img/box.png");
 
   engine = Engine.create();
   world = engine.world;
@@ -61,48 +61,56 @@ function setup() {
   //   boxes.push(box);
   // }
 
-  bird = new Bird(width / 5, (5 * height) / 8, 25, birdImg[0]);
+  birdsLevel = 5;
 
-  slingshot = new SlingShot(bird, slingshotImg);
+  for (let i = 0; i < birdsLevel; i++) {
+    let kind = "red";
+    if (random() > 0.5) {
+      kind = "yellow";
+    }
+    bird.push(
+      new Bird(
+        width / 5 - i * 55 - (i == 0 ? 0 : 50),
+        i == 0 ? (5 * height) / 8 : height - 175,
+        25,
+        spriteSheet.getSprite(kind)
+      )
+    );
+  }
+
+  slingshot = new SlingShot(bird[0], slingshotImg);
 
   map = new Map(createVector((2 * width) / 3, height - 150));
-
-  //Events.on(
-  //   engine,
-  //  'afterUpdate',
-  //  ()=> slingshot.fly(mc)
-  //);
 }
 
 function draw() {
-  // background("#C6E7FF");
-
   background(spriteSheet.getSprite("sky"));
 
   Engine.update(engine);
   nextBird();
   slingshot.fly(mc);
 
-  for (const box of boxes) {
-    box.show();
+  slingshot.show();
+  for (const b of bird) {
+    b.show();
   }
 
-  slingshot.show();
-  bird.show();
+  slingshot.showUpperPart();
   map.show();
   ground.show();
 }
 
 function nextBird() {
   if (
-    (slingshot.attached() == null && bird.stop()) ||
-    bird.body.position.x > width
+    (slingshot.attached() == null && bird[0].stop()) ||
+    bird[0].body.position.x > width
   ) {
-    bird.clear();
-
-    const index = floor(random(0, birdImg.length));
-
-    bird = new Bird(width / 5, height - 400, 25, birdImg[index]);
-    slingshot.attach(bird);
+    let bird_0 = bird[0];
+    bird.splice(0, 1);
+    console.log("BIRD", bird);
+    bird_0.clear();
+    bird[0].setPosition(width / 5, (5 * height) / 8);
+    console.log("BIRD", bird.collisionFilter);
+    slingshot.attach(bird[0]);
   }
 }
