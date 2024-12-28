@@ -46,7 +46,6 @@ class Entity {
         ? this.img + ceil(this.life) + this.status
         : this.img + this.status
     );
-    console.log(this.img + this.status, i);
     if (i) {
       imageMode(CENTER);
       rotate(this.body.angle);
@@ -85,7 +84,6 @@ class Bird extends Entity {
   }
 
   update(map, slignshot) {
-    console.log(this.status);
     switch (this.status) {
       case STATUS.IDLE:
         if (this.body.position.y >= height - 175) {
@@ -109,7 +107,6 @@ class Bird extends Entity {
         if (this.counter > 20) {
           this.status = STATUS.IDLE;
           this.counter = 0;
-          console.log("JUMP");
           Body.applyForce(this.body, this.body.position, { x: 0, y: -0.05 });
         }
         break;
@@ -127,7 +124,10 @@ class Bird extends Entity {
             (abs(this.lastVelocity.x) > gap || abs(this.lastVelocity.y) > gap)
           ) {
             this.status = STATUS.IMPACT;
-            box.collition(map);
+            box.collition(
+              map,
+              max((abs(this.lastVelocity.x), abs(this.lastVelocity.y)))
+            );
           }
         }
     }
@@ -147,10 +147,9 @@ class Pig extends Entity {
   }
 
   update(bird, map) {
-    console.log(this.status);
     if (Collision.collides(this.body, bird.body) != null) {
       this.status = STATUS.IDLE;
-      this.life -= 0.5;
+      this.life -= 1;
       if (this.life <= 0) {
         map.removePig(this.body);
         this.clear();
@@ -176,34 +175,38 @@ class Pig extends Entity {
 }
 
 class Box {
-  constructor(x, y, w, h, type = "stone", options = {}) {
+  constructor(x, y, w, h, type = "glass", options = {}) {
     switch (type) {
       case "stone":
         options = { ...options, friction: 2, density: 0.05 };
         this.life = 3;
+        break;
       case "glass":
         options = { ...options, friction: 0.5, density: 0.01 };
         this.life = 1;
+        break;
       case "wood":
         options = { ...options, friction: 0.5, density: 0.01 };
-        this.life = 3;
+        this.life = 2;
+        break;
     }
+    console.log("Vay", type, this.life);
     this.body = Bodies.rectangle(x, y, w, h, options);
     this.w = w;
     this.h = h;
     this.img =
       w != h ? (w < 3 * h && h < 3 * w ? type + "Sm" : type) : type + "Sqr";
     World.add(world, this.body);
-    console.log(this.img);
     this.status = LIFETIME.FIRST;
   }
 
-  collition() {
-    if (this.status == this.life) {
+  collition(map, damage) {
+    if (this.status >= this.life) {
       map.removeBox(this.body);
       World.remove(world, this.body);
     } else {
-      this.status = LIFETIME[convtoLIFETIME(this.status + 1)];
+      const newVal = this.status + 1 + damage;
+      this.status = LIFETIME[convtoLIFETIME(ceil(newVal > 3 ? 3 : newVal))];
     }
   }
 
@@ -452,12 +455,12 @@ class Map {
             pig.body.velocity.y > gap)
         ) {
           const red = max(
-            box.body.velocity.x,
-            box.body.velocity.y,
-            pig.body.velocity.x,
-            pig.body.velocity.y
+            abs(box.body.velocity.x),
+            abs(box.body.velocity.y),
+            abs(pig.body.velocity.x),
+            abs(pig.body.velocity.y)
           );
-          pig.life -= red / (gap * 10);
+          pig.life -= red / (gap * 20);
           if (pig.life <= 0) {
             map.removePig(pig.body);
             pig.clear();
