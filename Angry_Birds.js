@@ -9,6 +9,7 @@ const {
   Events,
   Composite,
   Composites,
+  Collision,
 } = Matter;
 
 let engine,
@@ -20,25 +21,19 @@ let engine,
   spriteSheet,
   map,
   birdsLevel,
-  bird = [];
+  bird = [],
+  gap = 1.5,
+  flag = false,
+  counter = 0;
 
 function preload() {
-  backgroundSpriteSheet = loadImage("img/background.png");
-  objSpriteSheet = loadImage("img/objTexture.png");
-  birdsSpriteSheet = loadImage("img/objTexture.png");
   slingshotImg = loadImage("img/slignshot.png");
-  spriteSheet = new SpriteSheet(
-    backgroundSpriteSheet,
-    birdsSpriteSheet,
-    objSpriteSheet
-  );
+  spriteSheet = new SpriteSheet();
   spriteSheet.loadSprites();
 }
 
 function setup() {
   const canvas = createCanvas(windowWidth / 1, windowHeight / 1);
-
-  // boxImg = loadImage("img/box.png");
 
   engine = Engine.create();
   world = engine.world;
@@ -53,15 +48,7 @@ function setup() {
 
   ground = new Ground(width / 2, height - 75, width, 150);
 
-  // for (let i = 0; i <= 6; i++) {
-  //   let box = new Box((2 * width) / 3, height - 40 * (i + 1), 60, 60, +);
-  //   boxes.push(box);
-
-  //   box = new Box((2 * width) / 3 + 60, height - 40 * (i + 1), 60, 60, boxImg);
-  //   boxes.push(box);
-  // }
-
-  birdsLevel = 5;
+  birdsLevel = 7;
 
   for (let i = 0; i < birdsLevel; i++) {
     let kind = "red";
@@ -70,13 +57,15 @@ function setup() {
     }
     bird.push(
       new Bird(
-        width / 5 - i * 55 - (i == 0 ? 0 : 50),
+        width / 5 - i * 55 - (i == 0 ? 0 : 10),
         i == 0 ? (5 * height) / 8 : height - 175,
         25,
-        spriteSheet.getSprite(kind)
+        kind
       )
     );
   }
+
+  bird[0].status = STATUS.LOADED;
 
   slingshot = new SlingShot(bird[0], slingshotImg);
 
@@ -87,30 +76,45 @@ function draw() {
   background(spriteSheet.getSprite("sky"));
 
   Engine.update(engine);
-  nextBird();
+  updateBird();
   slingshot.fly(mc);
 
   slingshot.show();
   for (const b of bird) {
+    b.update(map, slingshot);
     b.show();
   }
-
+  for (const pig of map.pigs) {
+    pig.update(bird[0], map);
+  }
+  map.update();
   slingshot.showUpperPart();
   map.show();
   ground.show();
 }
 
-function nextBird() {
+function updateBird() {
   if (
-    (slingshot.attached() == null && bird[0].stop()) ||
-    bird[0].body.position.x > width
+    ((slingshot.attached() == null && bird[0].stop()) ||
+      bird[0].body.position.x > width ||
+      bird[0].body.position.x < 0) &&
+    bird.length > 1
   ) {
+    flag = true;
+  }
+
+  if (flag) {
+    counter++;
+  }
+
+  if (counter > 10 && flag) {
     let bird_0 = bird[0];
     bird.splice(0, 1);
-    console.log("BIRD", bird);
     bird_0.clear();
     bird[0].setPosition(width / 5, (5 * height) / 8);
-    console.log("BIRD", bird.collisionFilter);
+    bird[0].status = STATUS.LOADED;
     slingshot.attach(bird[0]);
+    counter = 0;
+    flag = false;
   }
 }
