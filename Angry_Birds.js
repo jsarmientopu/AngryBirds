@@ -36,6 +36,7 @@ function setup() {
   const canvas = createCanvas(windowWidth / 1, windowHeight / 1);
 
   engine = Engine.create();
+  Engine.velocityIterations = 6;
   world = engine.world;
 
   const mouse = Mouse.create(canvas.elt);
@@ -70,6 +71,18 @@ function setup() {
   slingshot = new SlingShot(bird[0], slingshotImg);
 
   map = new Map(createVector((2 * width) / 3, height - 150));
+
+  Events.on(engine, "afterUpdate", () => {
+    console.log(Constraint.currentLength(slingshot.sling));
+    slingshot.sling.stiffness = min(
+      1,
+      Constraint.currentLength(slingshot.sling) > 0
+        ? Constraint.currentLength(slingshot.sling) / 3000
+        : 0.01
+    );
+
+    console.log(slingshot.sling.stiffness);
+  });
 }
 
 function draw() {

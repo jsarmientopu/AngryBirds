@@ -25,8 +25,8 @@ function convtoLIFETIME(value) {
 
 class Entity {
   constructor(x, y, r, img, options) {
-    this.body = Bodies.circle(x, y, r, options);
-    Body.setMass(this.body, 2);
+    this.body = Bodies.circle(x, y, r, { ...options, restitution: 0 });
+    // Body.setMass(this.body, 2);
     World.add(world, this.body);
     this.img = img;
     this.status = STATUS.IDLE;
@@ -78,7 +78,6 @@ class Entity {
 class Bird extends Entity {
   constructor(x, y, r, img) {
     super(x, y, r, img, {
-      restitution: 0.5,
       collisionFilter: { category: categoryBird, mask: ~categoryBird },
     });
   }
@@ -140,9 +139,7 @@ class Bird extends Entity {
 
 class Pig extends Entity {
   constructor(x, y, r, type) {
-    super(x, y, r, type, {
-      restitution: 0.5,
-    });
+    super(x, y, r, type);
     this.life = 3;
   }
 
@@ -176,27 +173,29 @@ class Pig extends Entity {
 
 class Box {
   constructor(x, y, w, h, type = "glass", options = {}) {
+    options = { ...options, restitution: 0 };
     switch (type) {
       case "stone":
-        options = { ...options, friction: 2, density: 0.05 };
+        options = { ...options, friction: 1, density: 0.005 };
         this.life = 3;
         break;
-      case "glass":
-        options = { ...options, friction: 0.5, density: 0.01 };
-        this.life = 1;
-        break;
       case "wood":
-        options = { ...options, friction: 0.5, density: 0.01 };
+        options = { ...options, friction: 0.8, density: 0.003 };
         this.life = 2;
+        break;
+      case "glass":
+        options = { ...options, friction: 0.6, density: 0.001 };
+        this.life = 1;
         break;
     }
     console.log("Vay", type, this.life);
-    this.body = Bodies.rectangle(x, y, w, h, options);
+    this.body = Bodies.rectangle(x, y, w, h, { ...options });
     this.w = w;
     this.h = h;
     this.img =
       w != h ? (w < 3 * h && h < 3 * w ? type + "Sm" : type) : type + "Sqr";
     World.add(world, this.body);
+    // Body.setMass(this.body, 10);
     this.status = LIFETIME.FIRST;
   }
 
@@ -249,6 +248,7 @@ class SlingShot {
       bodyB: bird.body,
       length: 5,
       stiffness: 0.01,
+      damping: 0.07,
     });
     World.add(world, this.sling);
     this.img = img;
@@ -338,62 +338,60 @@ class Map {
     this.loadEntities();
   }
 
-  loadTextures() {
-    spriteSheet.loadTexture();
-  }
-
   loadEntities() {
-    this.pigs.push(new Pig(this.center.x, this.center.y, 40, "kingPig"));
-    this.pigs.push(new Pig(this.center.x - 195, this.center.y, 35, "pig"));
-    this.pigs.push(new Pig(this.center.x + 195, this.center.y, 35, "pig"));
+    this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
+    this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
+    this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
     this.pigs.push(
-      new Pig(this.center.x - 195, this.center.y - 160, 35, "pig")
+      new Pig(this.center.x - 195, this.center.y - 195, 35, "pig")
     );
     this.pigs.push(
-      new Pig(this.center.x + 195, this.center.y - 160, 35, "pig")
+      new Pig(this.center.x + 195, this.center.y - 195, 35, "pig")
     );
   }
 
   loadMap() {
     //Main sides
-
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         this.boxes.push(
           new Box(
             this.center.x - 250 + i * 390,
-            this.center.y - j * 200,
+            this.center.y - j * 160 - 60,
             20,
-            120
+            120,
+            "wood"
           )
         );
         this.boxes.push(
           new Box(
             this.center.x - 140 + i * 390,
-            this.center.y - j * 200,
+            this.center.y - j * 160 - 60,
             20,
-            120
+            120,
+            "wood"
           )
         );
         this.boxes.push(
           new Box(
             this.center.x - 195 + i * 390,
-            this.center.y - 130 - j * 180,
+            this.center.y - 130 - j * 160,
             140,
-            20
+            20,
+            "glass"
           )
         );
         this.boxes.push(
           new Box(
             this.center.x - 195 + i * 390,
-            this.center.y - 150 - j * 180,
+            this.center.y - 150 - j * 160,
             140,
-            20
+            20,
+            "glass"
           )
         );
       }
     }
-
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 3; j++) {
         this.boxes.push(
@@ -401,46 +399,65 @@ class Map {
             this.center.x - 245 + j * 50 + i * 390,
             this.center.y - 335,
             30,
-            30
+            30,
+            "glass"
           )
         );
       }
     }
-
     //Center
     for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < 4; j++) {
+      this.boxes.push(
+        new Box(
+          this.center.x - 50 + i * 100,
+          this.center.y - 45,
+          20,
+          90,
+          "glass"
+        )
+      );
+      this.boxes.push(
+        new Box(this.center.x, this.center.y - 97.5 - i * 15, 120, 15, "glass")
+      );
+      this.boxes.push(
+        new Box(
+          this.center.x - 95 + i * 190,
+          this.center.y - 70,
+          30,
+          140,
+          "stone"
+        )
+      );
+      this.boxes.push(
+        new Box(this.center.x, this.center.y - 150 - i * 20, 240, 20, "stone")
+      );
+      // this.boxes.push(
+      //   new Box(this.center.x, this.center.y - 130 - i * 20, 240, 20, "stone")
+      // );
+      // for (let j = 0; j < 4; j++) {
+      //   this.boxes.push(
+      //     new Box(
+      //       this.center.x - 102.5 + i * 205 + (i < 1 ? j * 5 : -j * 5),
+      //       this.center.y - 15 - j * 30,
+      //       55,
+      //       30,
+      //       "glass"
+      //     )
+      //   );
+      // }
+    }
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 2; j++) {
         this.boxes.push(
           new Box(
-            this.center.x - 95 + i * 190 + (i > 0 ? j * 10 : -j * 10),
-            this.center.y - 15,
-            70,
-            30
+            this.center.x - 60 + j * 100,
+            this.center.y - 200 - i * 60,
+            60,
+            60,
+            "wood"
           )
         );
       }
-      this.boxes.push(
-        new Box(this.center.x - 50 + i * 100, this.center.y - 45, 20, 90)
-      );
-      this.boxes.push(
-        new Box(this.center.x, this.center.y - 90 - i * 15, 100, 10)
-      );
-      this.boxes.push(
-        new Box(this.center.x, this.center.y - 140 - i * 20, 260, 20)
-      );
-    }
-
-    for (let i = 0; i < 4; i++) {
-      this.boxes.push(
-        new Box(this.center.x - 100, this.center.y - 180 - i * 20, 40, 40)
-      );
-      this.boxes.push(
-        new Box(this.center.x + 100, this.center.y - 180 - i * 20, 40, 40)
-      );
-
-      this.boxes.push(
-        new Box(this.center.x, this.center.y - 180 - i * 20, 40, 40)
-      );
     }
   }
 
@@ -460,7 +477,7 @@ class Map {
             abs(pig.body.velocity.x),
             abs(pig.body.velocity.y)
           );
-          pig.life -= red / (gap * 20);
+          pig.life -= red / (gap * pig.img.includes("king") ? 30 : 20);
           if (pig.life <= 0) {
             map.removePig(pig.body);
             pig.clear();
