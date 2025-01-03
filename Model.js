@@ -25,13 +25,13 @@ function convtoLIFETIME(value) {
 
 class Entity {
   constructor(x, y, r, img, options) {
-    this.body = Bodies.circle(x, y, r, { ...options, restitution: 0 });
+    this.body = Bodies.circle(x, y, r, { ...options, restitution: 0.2 });
     // Body.setMass(this.body, 2);
     World.add(world, this.body);
     this.img = img;
     this.status = STATUS.IDLE;
     this.counter = 0;
-    this.lastVelocity;
+    this.lastVelocity = { x: 0, y: 0 };
   }
 
   setPosition(x, y) {
@@ -114,19 +114,26 @@ class Bird extends Entity {
           this.status = STATUS.FLYING;
         }
       default:
-        if (abs(this.body.velocity.x) > 0 && abs(this.body.velocity.y) > 0) {
-          this.lastVelocity = this.body.velocity;
-        }
-        for (const box of map.boxes) {
-          if (
-            Collision.collides(this.body, box.body) != null &&
-            (abs(this.lastVelocity.x) > gap || abs(this.lastVelocity.y) > gap)
-          ) {
-            this.status = STATUS.IMPACT;
-            box.collition(
-              map,
-              max((abs(this.lastVelocity.x), abs(this.lastVelocity.y)))
+        let collition = Detector.collisions(detector).filter(
+          (x) => x.bodyA == this.body || x.bodyB == this.body
+        );
+        if (collition.length == 0) {
+          this.lastVelocity = Body.getVelocity(this.body);
+        } else {
+          console.log(
+            collition,
+            this.lastVelocity,
+            Body.getVelocity(this.body),
+            this.body.velocity
+          );
+          for (const c of collition) {
+            let objCol = c.bodyA != this.body ? c.bodyA : c.bodyB;
+            let damage = Vector.magnitude(
+              Vector.sub(this.lastVelocity, c.tangent)
             );
+            this.status = STATUS.IMPACT;
+            map.collition(objCol, damage);
+            this.lastVelocity = { x: 0, y: 0 };
           }
         }
     }
@@ -143,14 +150,14 @@ class Pig extends Entity {
     this.life = 3;
   }
 
-  update(bird, map) {
-    if (Collision.collides(this.body, bird.body) != null) {
-      this.status = STATUS.IDLE;
-      this.life -= 1;
-      if (this.life <= 0) {
-        map.removePig(this.body);
-        this.clear();
-      }
+  update() {
+    let collition = Detector.collisions(detector).filter(
+      (x) => x.bodyA == this.body || x.bodyB == this.body
+    );
+    if (collition.length == 0) {
+      this.lastVelocity = Body.getVelocity(this.body);
+    } else {
+      this.lastVelocity = { x: 0, y: 0 };
     }
     switch (this.status) {
       case STATUS.IDLE:
@@ -184,11 +191,10 @@ class Box {
         this.life = 2;
         break;
       case "glass":
-        options = { ...options, friction: 0.6, density: 0.001 };
+        options = { ...options, friction: 0.5, density: 0.001 };
         this.life = 1;
         break;
     }
-    console.log("Vay", type, this.life);
     this.body = Bodies.rectangle(x, y, w, h, { ...options });
     this.w = w;
     this.h = h;
@@ -197,16 +203,7 @@ class Box {
     World.add(world, this.body);
     // Body.setMass(this.body, 10);
     this.status = LIFETIME.FIRST;
-  }
-
-  collition(map, damage) {
-    if (this.status >= this.life) {
-      map.removeBox(this.body);
-      World.remove(world, this.body);
-    } else {
-      const newVal = this.status + 1 + damage;
-      this.status = LIFETIME[convtoLIFETIME(ceil(newVal > 3 ? 3 : newVal))];
-    }
+    this.lastVelocity = { x: 0, y: 0 };
   }
 
   show() {
@@ -248,7 +245,7 @@ class SlingShot {
       bodyB: bird.body,
       length: 5,
       stiffness: 0.01,
-      damping: 0.07,
+      // damping: 0.07,
     });
     World.add(world, this.sling);
     this.img = img;
@@ -343,15 +340,16 @@ class Map {
     this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
     this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
     this.pigs.push(
-      new Pig(this.center.x - 195, this.center.y - 195, 35, "pig")
+      new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
     );
     this.pigs.push(
-      new Pig(this.center.x + 195, this.center.y - 195, 35, "pig")
+      new Pig(this.center.x + 195, this.center.y - 190, 30, "pig")
     );
   }
 
   loadMap() {
     //Main sides
+    let j = 0;
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         this.boxes.push(
@@ -375,19 +373,10 @@ class Map {
         this.boxes.push(
           new Box(
             this.center.x - 195 + i * 390,
-            this.center.y - 130 - j * 160,
+            this.center.y - 140 - j * 160,
             140,
-            20,
-            "glass"
-          )
-        );
-        this.boxes.push(
-          new Box(
-            this.center.x - 195 + i * 390,
-            this.center.y - 150 - j * 160,
-            140,
-            20,
-            "glass"
+            40,
+            "wood"
           )
         );
       }
@@ -398,8 +387,8 @@ class Map {
           new Box(
             this.center.x - 245 + j * 50 + i * 390,
             this.center.y - 335,
-            30,
-            30,
+            40,
+            40,
             "glass"
           )
         );
@@ -428,33 +417,25 @@ class Map {
           "stone"
         )
       );
-      this.boxes.push(
-        new Box(this.center.x, this.center.y - 150 - i * 20, 240, 20, "stone")
-      );
-      // this.boxes.push(
-      //   new Box(this.center.x, this.center.y - 130 - i * 20, 240, 20, "stone")
-      // );
-      // for (let j = 0; j < 4; j++) {
-      //   this.boxes.push(
-      //     new Box(
-      //       this.center.x - 102.5 + i * 205 + (i < 1 ? j * 5 : -j * 5),
-      //       this.center.y - 15 - j * 30,
-      //       55,
-      //       30,
-      //       "glass"
-      //     )
-      //   );
-      // }
     }
+    this.boxes.push(
+      new Box(this.center.x, this.center.y - 150, 240, 20, "stone")
+    );
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 2; j++) {
         this.boxes.push(
           new Box(
-            this.center.x - 60 + j * 100,
-            this.center.y - 200 - i * 60,
-            60,
-            60,
-            "wood"
+            this.center.x - 60 + j * 120,
+            this.center.y -
+              160 -
+              Array.from(new Array(i + 1), (x, y) => y).reduce(
+                (c, v) => c + 60 - v * 10,
+                0
+              ) +
+              (60 - i * 10) / 2,
+            60 - i * 10,
+            60 - i * 10,
+            "glass"
           )
         );
       }
@@ -462,26 +443,51 @@ class Map {
   }
 
   update() {
-    for (const pig of this.pigs) {
+    let collition = Detector.collisions(detector).filter(
+      (x) => x.bodyA.circleRadius != 0 || x.bodyB.circleRadius != 0
+    );
+    for (const c of collition) {
+      let obj1 =
+        c.bodyA.circleRadius != 0
+          ? this.pigs.filter((x) => x.body == c.bodyA)[0]
+          : this.boxes.filter((x) => x.body == c.bodyA)[0];
+      let obj2 =
+        c.bodyB.circleRadius != 0
+          ? this.pigs.filter((x) => x.body == c.bodyB)[0]
+          : this.boxes.filter((x) => x.body == c.bodyB)[0];
+      console.log(obj1, obj2);
+      if (obj1 && obj2) {
+        let damage = max(
+          Vector.magnitude(Vector.sub(obj1.lastVelocity, c.tangent)),
+          Vector.magnitude(Vector.sub(obj2.lastVelocity, c.tangent))
+        );
+        console.log("DAÑOS", obj1, damage);
+        if (obj1 instanceof Pig && damage > gap / 4) {
+          obj1.life -= damage / (gap * obj1.img.includes("king") ? 4 : 3);
+          if (obj1.life <= 0) {
+            map.removePig(obj1.body);
+            obj1.clear();
+          }
+        }
+        if (obj2 instanceof Pig && damage > gap / 4) {
+          obj2.life -= damage / (gap * obj2.img.includes("king") ? 4 : 3);
+          console.log("dañ2o", obj1, damage);
+          if (obj2.life <= 0) {
+            map.removePig(obj2.body);
+            obj2.clear();
+          }
+        }
+      }
+
       for (const box of this.boxes) {
         if (
-          Collision.collides(pig.body, box.body) != null &&
-          (box.body.velocity.x > gap ||
-            box.body.velocity.y > gap ||
-            pig.body.velocity.x > gap ||
-            pig.body.velocity.y > gap)
+          Detector.collisions(detector).filter(
+            (x) => x.bodyA == box.body || x.bodyB == box.body
+          ).length == 0
         ) {
-          const red = max(
-            abs(box.body.velocity.x),
-            abs(box.body.velocity.y),
-            abs(pig.body.velocity.x),
-            abs(pig.body.velocity.y)
-          );
-          pig.life -= red / (gap * pig.img.includes("king") ? 30 : 20);
-          if (pig.life <= 0) {
-            map.removePig(pig.body);
-            pig.clear();
-          }
+          box.lastVelocity = Body.getVelocity(box.body);
+        } else {
+          box.lastVelocity = { x: 0, y: 0 };
         }
       }
     }
@@ -489,6 +495,28 @@ class Map {
     if (this.pigs.length <= 0) {
       console.log("VICTORIA");
       noLoop();
+    }
+  }
+
+  collition(entity, damage) {
+    if (entity.circleRadius > 0) {
+      const pig = this.pigs.filter((x) => x.body == entity)[0];
+      pig.life -=
+        damage > gap / 2 ? 1 : damage > gap / 15 ? damage / (gap * 1.5) : 0;
+      if (pig.life <= 0) {
+        map.removePig(pig);
+        pig.clear();
+      }
+    } else if (damage > gap) {
+      const box = this.boxes.filter((x) => x.body == entity)[0];
+      console.log("daño", damage, damage / (gap * 2));
+      if (box.status >= box.life) {
+        map.removeBox(box.body);
+        World.remove(world, box.body);
+      } else {
+        const newVal = box.status + damage / (gap * 4);
+        box.status = LIFETIME[convtoLIFETIME(ceil(newVal > 3 ? 3 : newVal))];
+      }
     }
   }
 

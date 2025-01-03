@@ -10,6 +10,8 @@ const {
   Composite,
   Composites,
   Collision,
+  Detector,
+  Vector,
 } = Matter;
 
 let engine,
@@ -22,9 +24,10 @@ let engine,
   map,
   birdsLevel,
   bird = [],
-  gap = 1.5,
+  gap = 5,
   flag = false,
-  counter = 0;
+  counter = 0,
+  detector;
 
 function preload() {
   slingshotImg = loadImage("img/slignshot.png");
@@ -36,7 +39,7 @@ function setup() {
   const canvas = createCanvas(windowWidth / 1, windowHeight / 1);
 
   engine = Engine.create();
-  Engine.velocityIterations = 6;
+  Engine.velocityIterations = 10;
   world = engine.world;
 
   const mouse = Mouse.create(canvas.elt);
@@ -73,7 +76,7 @@ function setup() {
   map = new Map(createVector((2 * width) / 3, height - 150));
 
   Events.on(engine, "afterUpdate", () => {
-    console.log(Constraint.currentLength(slingshot.sling));
+    // console.log(Constraint.currentLength(slingshot.sling));
     slingshot.sling.stiffness = min(
       1,
       Constraint.currentLength(slingshot.sling) > 0
@@ -81,26 +84,38 @@ function setup() {
         : 0.01
     );
 
-    console.log(slingshot.sling.stiffness);
+    // console.log(slingshot.sling.stiffness);
   });
+
+  detector = Detector.create();
+  World.add(world, detector);
+}
+
+function updateCollisions() {
+  Detector.setBodies(detector, [
+    ...map.boxes.map((x) => x.body),
+    ...map.pigs.map((x) => x.body),
+    ...bird.map((x) => x.body),
+  ]);
 }
 
 function draw() {
   background(spriteSheet.getSprite("sky"));
-
+  updateCollisions();
   Engine.update(engine);
   updateBird();
   slingshot.fly(mc);
 
+  map.update();
+  for (const pig of map.pigs) {
+    pig.update(bird[0], map);
+  }
   slingshot.show();
   for (const b of bird) {
     b.update(map, slingshot);
     b.show();
   }
-  for (const pig of map.pigs) {
-    pig.update(bird[0], map);
-  }
-  map.update();
+
   slingshot.showUpperPart();
   map.show();
   ground.show();
