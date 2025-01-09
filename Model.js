@@ -494,7 +494,9 @@ class Map {
 
     if (this.pigs.length <= 0) {
       console.log("VICTORIA");
-      noLoop();
+      // noLoop();
+      gameState = "won";
+      starAnimationStart = millis();
     }
   }
 
