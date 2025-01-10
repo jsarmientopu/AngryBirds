@@ -43,12 +43,12 @@ function preload() {
   stars = [
     loadImage("img/star1.png"),
     loadImage("img/star2.png"),
-    loadImage("img/star3.png")
+    loadImage("img/star3.png"),
   ];
   blackStars = [
     loadImage("img/blackstar1.png"),
     loadImage("img/blackstar2.png"),
-    loadImage("img/blackstar3.png")
+    loadImage("img/blackstar3.png"),
   ];
   retryImg = loadImage("img/retry.png");
   slingshotImg = loadImage("img/slignshot.png");
@@ -62,7 +62,7 @@ function setup() {
   const canvas = createCanvas(windowWidth / 1, windowHeight / 1);
 
   engine = Engine.create();
-  Engine.velocityIterations = 10;
+  Engine.velocityIterations = 4;
   world = engine.world;
 
   const mouse = Mouse.create(canvas.elt);
@@ -75,7 +75,7 @@ function setup() {
 
   ground = new Ground(width / 2, height - 75, width, 150);
 
-  birdsLevel = 2;
+  birdsLevel = 5;
 
   for (let i = 0; i < birdsLevel; i++) {
     let kind = "red";
@@ -138,10 +138,11 @@ function draw() {
     Engine.update(engine);
     updateBird();
     slingshot.fly(mc);
-    map.update();
+    bird[0].update(map, slingshot);
     for (const pig of map.pigs) {
-      pig.update(bird[0], map);
+      pig.update();
     }
+    map.update();
     checkGameEnd();
   }
   // if (!isPaused) {
@@ -214,52 +215,55 @@ function drawEndScreen() {
   push();
   fill(0, 0, 0, 127);
   rectMode(CENTER);
-  rect(width/2, height/2, width/3, height);
-  
+  rect(width / 2, height / 2, width / 3, height);
+
   // Draw text
   textSize(60);
   textAlign(CENTER, CENTER);
   fill(255);
-  text(gameState === "won" ? "LEVEL CLEARED!" : "LEVEL LOST!", width/2, height/3 - height/4);
+  text(
+    gameState === "won" ? "LEVEL CLEARED!" : "LEVEL LOST!",
+    width / 2,
+    height / 3 - height / 4
+  );
 
   // Calculate positions for stars
   const starSize = 150;
   const starSpacing = starSize * 1.2;
-  const startX = width/2 - 1.5* starSpacing;
-  const starY = height/2 - height/4;
-  
+  const startX = width / 2 - 1.5 * starSpacing;
+  const starY = height / 2 - height / 4;
+
   // Draw stars with animation
   const currentTime = millis();
   const starImages = gameState === "won" ? stars : blackStars;
-  
+
   for (let i = 0; i < 3; i++) {
     if (currentTime - starAnimationStart > i * STAR_ANIMATION_DELAY) {
-      image(
-        starImages[i], 
-        startX + i * starSpacing, 
-        starY, 
-        starSize, 
-        starSize
-      );
+      image(starImages[i], startX + i * starSpacing, starY, starSize, starSize);
     }
   }
 
   // Draw retry button
   const buttonSize = 90;
-  image(retryImg, width/2 -buttonSize/2, height * 2/3, buttonSize, buttonSize);
+  image(
+    retryImg,
+    width / 2 - buttonSize / 2,
+    (height * 2) / 3,
+    buttonSize,
+    buttonSize
+  );
   pop();
 }
-
 
 // Add this new function to handle mouse clicks
 function mousePressed() {
   if (gameState !== "playing") {
     const buttonSize2 = 60;
     if (
-      mouseX > width/2 - buttonSize2/2 &&
-      mouseX < width/2 + buttonSize2/2 &&
-      mouseY > height * 2/3 - buttonSize2/2 &&
-      mouseY < height * 2/3 + buttonSize2/2
+      mouseX > width / 2 - buttonSize2 / 2 &&
+      mouseX < width / 2 + buttonSize2 / 2 &&
+      mouseY > (height * 2) / 3 - buttonSize2 / 2 &&
+      mouseY < (height * 2) / 3 + buttonSize2 / 2
     ) {
       resetGame();
     }
@@ -280,31 +284,31 @@ function mousePressed() {
 
     if (isPaused) {
       // Store current velocities when pausing
-      bird.forEach(b => {
+      bird.forEach((b) => {
         b.storedVelocity = { ...b.body.velocity };
         Body.setVelocity(b.body, { x: 0, y: 0 });
       });
-      map.boxes.forEach(box => {
+      map.boxes.forEach((box) => {
         box.storedVelocity = { ...box.body.velocity };
         Body.setVelocity(box.body, { x: 0, y: 0 });
       });
-      map.pigs.forEach(pig => {
+      map.pigs.forEach((pig) => {
         pig.storedVelocity = { ...pig.body.velocity };
         Body.setVelocity(pig.body, { x: 0, y: 0 });
       });
     } else {
       // Restore velocities when unpausing
-      bird.forEach(b => {
+      bird.forEach((b) => {
         if (b.storedVelocity) {
           Body.setVelocity(b.body, b.storedVelocity);
         }
       });
-      map.boxes.forEach(box => {
+      map.boxes.forEach((box) => {
         if (box.storedVelocity) {
           Body.setVelocity(box.body, box.storedVelocity);
         }
       });
-      map.pigs.forEach(pig => {
+      map.pigs.forEach((pig) => {
         if (pig.storedVelocity) {
           Body.setVelocity(pig.body, pig.storedVelocity);
         }
@@ -313,14 +317,13 @@ function mousePressed() {
   }
 }
 
-
 function checkGameEnd() {
   // Win condition: all pigs are eliminated
   if (map.pigs.length <= 0) {
     gameState = "won";
     starAnimationStart = millis();
   }
-  
+
   // Lose condition: no more birds and pigs still exist
   if (bird.length <= 0 && map.pigs.length > 0) {
     gameState = "lost";
@@ -331,18 +334,18 @@ function checkGameEnd() {
 function resetGame() {
   // Remove all existing bodies from the world
   World.clear(world);
-  
+
   // Reset arrays
   bird = [];
   map.boxes = [];
   map.pigs = [];
-  
+
   // Reset game state
   gameState = "playing";
-  
+
   // Recreate the initial setup
   ground = new Ground(width / 2, height - 75, width, 150);
-  
+
   // Recreate birds
   birdsLevel = 7;
   for (let i = 0; i < birdsLevel; i++) {
@@ -359,13 +362,13 @@ function resetGame() {
       )
     );
   }
-  
+
   bird[0].status = STATUS.LOADED;
   slingshot = new SlingShot(bird[0], slingshotImg);
-  
+
   // Recreate map
   map = new Map(createVector((2 * width) / 3, height - 150));
-  
+
   // Add mouse constraint back
   World.add(world, mc);
 }

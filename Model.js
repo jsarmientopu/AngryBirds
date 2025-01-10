@@ -245,7 +245,6 @@ class SlingShot {
       bodyB: bird.body,
       length: 5,
       stiffness: 0.01,
-      // damping: 0.07,
     });
     World.add(world, this.sling);
     this.img = img;
@@ -339,6 +338,7 @@ class Map {
     this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
     this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
     this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
+    this.pigs.push(new Pig(this.center.x - 300, this.center.y - 30, 30, "pig"));
     this.pigs.push(
       new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
     );
@@ -455,25 +455,25 @@ class Map {
         c.bodyB.circleRadius != 0
           ? this.pigs.filter((x) => x.body == c.bodyB)[0]
           : this.boxes.filter((x) => x.body == c.bodyB)[0];
-      console.log(obj1, obj2);
+      // console.log(obj1, obj2);
       if (obj1 && obj2) {
         let damage = max(
           Vector.magnitude(Vector.sub(obj1.lastVelocity, c.tangent)),
           Vector.magnitude(Vector.sub(obj2.lastVelocity, c.tangent))
         );
-        console.log("DAÑOS", obj1, damage);
+        // console.log("DAÑOS", obj1, damage);
         if (obj1 instanceof Pig && damage > gap / 4) {
           obj1.life -= damage / (gap * obj1.img.includes("king") ? 4 : 3);
           if (obj1.life <= 0) {
-            map.removePig(obj1.body);
+            this.removePig(obj1.body);
             obj1.clear();
           }
         }
         if (obj2 instanceof Pig && damage > gap / 4) {
           obj2.life -= damage / (gap * obj2.img.includes("king") ? 4 : 3);
-          console.log("dañ2o", obj1, damage);
+          // console.log("dañ2o", obj1, damage);
           if (obj2.life <= 0) {
-            map.removePig(obj2.body);
+            this.removePig(obj2.body);
             obj2.clear();
           }
         }
@@ -490,30 +490,35 @@ class Map {
           box.lastVelocity = { x: 0, y: 0 };
         }
       }
+
+      for (const pig of this.pigs) {
+        if (pig.body.position.x > width || pig.body.position.x < 0) {
+          this.removePig(pig.body);
+          pig.clear();
+        }
+      }
     }
 
     if (this.pigs.length <= 0) {
       console.log("VICTORIA");
-      // noLoop();
-      gameState = "won";
-      starAnimationStart = millis();
+      noLoop();
     }
   }
 
   collition(entity, damage) {
-    if (entity.circleRadius > 0) {
-      const pig = this.pigs.filter((x) => x.body == entity)[0];
+    const pig = this.pigs.filter((x) => x.body == entity)[0];
+    const box = this.boxes.filter((x) => x.body == entity)[0];
+    if (entity.circleRadius > 0 && pig) {
       pig.life -=
-        damage > gap / 2 ? 1 : damage > gap / 15 ? damage / (gap * 1.5) : 0;
+        damage > gap / 2 ? 1 : damage > gap / 5 ? damage / (gap * 1.7) : 0;
       if (pig.life <= 0) {
-        map.removePig(pig);
+        this.removePig(pig.body);
         pig.clear();
       }
-    } else if (damage > gap) {
-      const box = this.boxes.filter((x) => x.body == entity)[0];
-      console.log("daño", damage, damage / (gap * 2));
+    } else if (damage > gap && box) {
+      // console.log("daño", damage, damage / (gap * 2));
       if (box.status >= box.life) {
-        map.removeBox(box.body);
+        this.removeBox(box.body);
         World.remove(world, box.body);
       } else {
         const newVal = box.status + damage / (gap * 4);
@@ -535,6 +540,7 @@ class Map {
 
   removePig(pig) {
     let index;
+    console.log([...this.pigs]);
     for (let i = 0; i < this.pigs.length; i++) {
       if (this.pigs[i].body == pig) {
         index = i;
@@ -542,6 +548,7 @@ class Map {
       }
     }
     this.pigs.splice(index, 1);
+    console.log(this.pigs);
   }
 
   show() {
@@ -554,3 +561,13 @@ class Map {
     }
   }
 }
+
+// class Menu {
+//   constructor(center) {
+//     this.center = center;
+//     this.boxes = [];
+//     this.pigs = [];
+//     this.loadMap();
+//     this.loadEntities();
+//   }
+// }
