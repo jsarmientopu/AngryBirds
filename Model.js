@@ -80,9 +80,10 @@ class Bird extends Entity {
     super(x, y, r, img, {
       collisionFilter: { category: categoryBird, mask: ~categoryBird },
     });
+    this.launched = false;
   }
 
-  update(map, slignshot) {
+  update(map, slingshot) {
     switch (this.status) {
       case STATUS.IDLE:
         if (this.body.position.y >= height - 175) {
@@ -110,9 +111,11 @@ class Bird extends Entity {
         }
         break;
       case STATUS.LOADED:
-        if (slignshot.sling.bodyB == null) {
+        if (slingshot.sling.bodyB == null) {
           this.status = STATUS.FLYING;
+          this.launched = true;
         }
+        break;
       default:
         let collition = Detector.collisions(detector).filter(
           (x) => x.bodyA == this.body || x.bodyB == this.body
@@ -120,12 +123,6 @@ class Bird extends Entity {
         if (collition.length == 0) {
           this.lastVelocity = Body.getVelocity(this.body);
         } else {
-          console.log(
-            collition,
-            this.lastVelocity,
-            Body.getVelocity(this.body),
-            this.body.velocity
-          );
           for (const c of collition) {
             let objCol = c.bodyA != this.body ? c.bodyA : c.bodyB;
             let damage = Vector.magnitude(
@@ -143,6 +140,8 @@ class Bird extends Entity {
     return abs(this.body.velocity.x) < 10e-4;
   }
 }
+
+
 
 class Pig extends Entity {
   constructor(x, y, r, type) {

@@ -207,7 +207,11 @@ function updateBird() {
     counter = 0;
     flag = false;
   }
+
+  // Check game end separately
+  checkGameEnd();
 }
+
 
 function drawEndScreen() {
   // Draw semi-transparent background
@@ -321,12 +325,20 @@ function checkGameEnd() {
     starAnimationStart = millis();
   }
   
-  // Lose condition: no more birds and pigs still exist
-  if (bird.length <= 0 && map.pigs.length > 0) {
+  // Lose condition: last bird used and stopped or out of bounds
+  let lastBirdInactive = bird.length === 1 && 
+    slingshot.attached() == null && 
+    (bird[0].stop() || 
+     bird[0].body.position.x > width || 
+     bird[0].body.position.x < 0 || 
+     bird[0].body.position.y > height);
+  
+  if ((bird.length === 0 || lastBirdInactive) && map.pigs.length > 0) {
     gameState = "lost";
     starAnimationStart = millis();
   }
 }
+
 
 function resetGame() {
   // Remove all existing bodies from the world
