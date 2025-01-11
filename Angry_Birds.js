@@ -18,11 +18,9 @@ let engine,
   world,
   mc,
   spriteSheet,
-  birdsLevel = 2,
-  gap = 5,
-  detector,
-  isPaused = false,
-  menu;
+  birdsLevel = 2, //Birs in the level
+  gap = 5, //Sensibility of the game (Collisions, detentions)
+  detector;
 
 let gameState = "playing"; // can be "playing", "won", or "lost"
 let stars = [];
@@ -119,8 +117,6 @@ class Game {
     this.birds = [];
 
     this.generateBirds();
-
-    console.log(this.birds[0]);
 
     this.birds[0].status = STATUS.LOADED;
 
@@ -225,7 +221,7 @@ class Game {
     this.map.update();
 
     //Launch or reload the birds
-    this.slingshot.fly(mc, this.birds);
+    this.slingshot.fly(mc, this.birds, this.map);
 
     //Pigs flicker
     for (const pig of this.map.pigs) {
@@ -278,7 +274,10 @@ class AngryBirds {
 
   resetGame() {
     console.log("reset");
-    this.game = new AngryBirds(width, height, birdsLevel);
+    this.game.clear();
+    this.game = new Game(width, height, birdsLevel);
+    this.state = GAME_STATUS.PLAYING;
+    console.log(this.game);
   }
 
   continue() {

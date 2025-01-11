@@ -258,7 +258,7 @@ class SlingShot {
     this.delayReappear = 0;
   }
 
-  fly(mc, birds) {
+  fly(mc, birds, map) {
     // console.log("P", this.sling.bodyB);
     // console.log("P", mc.mouse.button === -1);
     // console.log("P", this.sling.bodyB.position, this.sling.pointA);
@@ -275,6 +275,7 @@ class SlingShot {
     } else if (
       this.attached() == null &&
       birds[0].stop() &&
+      map.stop() &&
       birds.length > 0 &&
       !this.delayReappear > 0
     ) {
@@ -290,7 +291,7 @@ class SlingShot {
       this.delayReappear++;
 
       console.log(this.delayReappear);
-      if (this.delayReappear > 10) {
+      if (this.delayReappear > 100) {
         let birds_0 = birds[0];
         birds.splice(0, 1);
         birds_0.clear();
@@ -314,7 +315,7 @@ class SlingShot {
   }
 
   clear() {
-    World.remove(world, this.body);
+    World.remove(world, this.sling);
   }
 
   show() {
@@ -387,7 +388,6 @@ class Map {
     this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
     this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
     this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
-    this.pigs.push(new Pig(this.center.x - 300, this.center.y - 30, 30, "pig"));
     this.pigs.push(
       new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
     );
@@ -577,6 +577,20 @@ class Map {
         box.status = LIFETIME[convtoLIFETIME(ceil(newVal > 3 ? 3 : newVal))];
       }
     }
+  }
+
+  stop() {
+    for (let pig of this.pigs) {
+      if (Vector.magnitude(pig.body.velocity) > gap / 2) {
+        return false;
+      }
+    }
+    for (let box of this.boxes) {
+      if (Vector.magnitude(box.body.velocity) > gap / 2) {
+        return false;
+      }
+    }
+    return true;
   }
 
   removeBox(box) {
