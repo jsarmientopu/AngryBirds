@@ -80,9 +80,10 @@ class Bird extends Entity {
     super(x, y, r, img, {
       collisionFilter: { category: categoryBird, mask: ~categoryBird },
     });
+    this.launched = false;
   }
 
-  update(map, slignshot) {
+  update(map, slingshot) {
     switch (this.status) {
       case STATUS.IDLE:
         if (this.body.position.y >= height - 175) {
@@ -110,9 +111,11 @@ class Bird extends Entity {
         }
         break;
       case STATUS.LOADED:
-        if (slignshot.sling.bodyB == null) {
+        if (slingshot.sling.bodyB == null) {
           this.status = STATUS.FLYING;
+          this.launched = true;
         }
+        break;
       default:
         let collition = Detector.collisions(detector).filter(
           (x) => x.bodyA == this.body || x.bodyB == this.body
@@ -120,12 +123,6 @@ class Bird extends Entity {
         if (collition.length == 0) {
           this.lastVelocity = Body.getVelocity(this.body);
         } else {
-          console.log(
-            collition,
-            this.lastVelocity,
-            Body.getVelocity(this.body),
-            this.body.velocity
-          );
           for (const c of collition) {
             let objCol = c.bodyA != this.body ? c.bodyA : c.bodyB;
             let damage = Vector.magnitude(
@@ -140,7 +137,11 @@ class Bird extends Entity {
   }
 
   stop() {
-    return abs(this.body.velocity.x) < 10e-4;
+    return (
+      abs(this.body.velocity.x) < 10e-4 ||
+      this.body.position.x > width ||
+      this.body.position.x < 0
+    );
   }
 }
 
@@ -229,6 +230,10 @@ class Box {
 
     pop();
   }
+
+  clear() {
+    World.remove(world, this.body);
+  }
 }
 
 class Ground extends Box {
@@ -244,10 +249,72 @@ class SlingShot {
       pointA: { x: bird.body.position.x, y: bird.body.position.y },
       bodyB: bird.body,
       length: 5,
+      stiffness: 1,
       stiffness: 0.01,
+      // damping: 0.07,
     });
     World.add(world, this.sling);
     this.img = img;
+    this.delayReappear = 0;
+  }
+
+  fly(mc, birds) {
+    // console.log("P", this.sling.bodyB);
+    // console.log("P", mc.mouse.button === -1);
+    // console.log("P", this.sling.bodyB.position, this.sling.pointA);
+    // console.log("P", this.sling.bodyB.position.x > this.sling.pointA.x + 1);
+    if (
+      this.sling.bodyB &&
+      mc.mouse.button === -1 &&
+      this.sling.bodyB.position.x > this.sling.pointA.x + 10
+    ) {
+      //Manage Launch
+
+      this.sling.bodyB.collisionFilter.category = 1;
+      this.sling.bodyB = null;
+    } else if (
+      this.attached() == null &&
+      birds[0].stop() &&
+      birds.length > 0 &&
+      !this.delayReappear > 0
+    ) {
+      //Manage Birds Reloadd
+
+      this.delayReappear = 1;
+    }
+
+    console.log(this.delayReappear);
+
+    if (this.delayReappear > 0) {
+      console.log(this.delayReappear);
+      this.delayReappear++;
+
+      console.log(this.delayReappear);
+      if (this.delayReappear > 10) {
+        let birds_0 = birds[0];
+        birds.splice(0, 1);
+        birds_0.clear();
+        if (birds.length > 0) {
+          this.attach(birds[0]);
+        }
+        this.delayReappear = 0;
+      }
+    }
+  }
+
+  attach(bird) {
+    this.bird = bird;
+    this.bird.setPosition(width / 5, (5 * height) / 8);
+    this.bird.status = STATUS.LOADED;
+    this.sling.bodyB = bird.body;
+  }
+
+  attached() {
+    return this.sling.bodyB;
+  }
+
+  clear() {
+    World.remove(world, this.body);
   }
 
   show() {
@@ -304,25 +371,6 @@ class SlingShot {
     }
     pop();
   }
-
-  fly(mc) {
-    if (
-      this.sling.bodyB &&
-      mc.mouse.button === -1 &&
-      this.sling.bodyB.position.x > this.sling.pointA.x + 10
-    ) {
-      this.sling.bodyB.collisionFilter.category = 1;
-      this.sling.bodyB = null;
-    }
-  }
-
-  attach(bird) {
-    this.sling.bodyB = bird.body;
-  }
-
-  attached() {
-    return this.sling.bodyB;
-  }
 }
 
 class Map {
@@ -330,6 +378,7 @@ class Map {
     this.center = center;
     this.boxes = [];
     this.pigs = [];
+    this.life = 0;
     this.loadMap();
     this.loadEntities();
   }
@@ -345,6 +394,9 @@ class Map {
     this.pigs.push(
       new Pig(this.center.x + 195, this.center.y - 190, 30, "pig")
     );
+    for (let pig of this.pigs) {
+      this.life += pig.life;
+    }
   }
 
   loadMap() {
@@ -551,6 +603,27 @@ class Map {
     console.log(this.pigs);
   }
 
+  getProgress() {
+    if (this.pigs.length > 0) {
+      let val = this.life;
+      for (let pig of this.pigs) {
+        val -= pig.life;
+      }
+      return floor((val / this.life) * 3);
+    } else {
+      return 3;
+    }
+  }
+
+  clear() {
+    for (let pig of this.pigs) {
+      pig.clear();
+    }
+    for (let box of this.boxes) {
+      box.clear();
+    }
+  }
+
   show() {
     for (const box of this.boxes) {
       box.show();
@@ -561,13 +634,3 @@ class Map {
     }
   }
 }
-
-// class Menu {
-//   constructor(center) {
-//     this.center = center;
-//     this.boxes = [];
-//     this.pigs = [];
-//     this.loadMap();
-//     this.loadEntities();
-//   }
-// }
