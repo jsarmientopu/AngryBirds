@@ -550,11 +550,6 @@ class Map {
         }
       }
     }
-
-    if (this.pigs.length <= 0) {
-      console.log("VICTORIA");
-      noLoop();
-    }
   }
 
   collition(entity, damage) {

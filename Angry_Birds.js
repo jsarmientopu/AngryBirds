@@ -18,7 +18,7 @@ let engine,
   world,
   mc,
   spriteSheet,
-  birdsLevel = 2, //Birs in the level
+  birdsLevel = 6, //Birs in the level
   gap = 5, //Sensibility of the game (Collisions, detentions)
   detector;
 
@@ -75,7 +75,7 @@ function mousePressed() {
       mouseY < (height * 2) / 3 + buttonSize2 / 2
     ) {
       console.log("rese");
-      if (game.state == GAME_STATUS.LOST || game.state == GAME_STATUS.WIN) {
+      if (game.state == GAME_STATUS.LOST || game.state == GAME_STATUS.WON) {
         game.resetGame();
       } else {
         game.continue();
