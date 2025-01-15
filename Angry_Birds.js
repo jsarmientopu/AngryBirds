@@ -36,7 +36,10 @@ function preload() {
 }
 
 function setup() {
-  const canvas = createCanvas(windowWidth / 1, windowHeight / 1);
+  const canvas = createCanvas(
+    windowHeight * 2 > windowWidth ? windowHeight * 2 : windowWidth,
+    windowHeight
+  );
 
   engine = Engine.create();
   world = engine.world;
@@ -376,7 +379,7 @@ class AngryBirds {
     }
 
     if (this.state == GAME_STATUS.PLAYING) {
-      Engine.update(engine, 9);
+      Engine.update(engine, 10);
 
       this.game.update();
     }
@@ -386,6 +389,8 @@ class AngryBirds {
     if (this.state === GAME_STATUS.MENU) {
       // Draw menu background
       background(spriteSheet.getSprite("sky"));
+
+      this.ground.show();
 
       // Draw logo with animation
       push();
@@ -401,7 +406,6 @@ class AngryBirds {
       tint(255, this.playButtonOpacity);
       image(this.playImg, width / 2, height * 0.65, 447, 313);
       pop();
-      this.ground.show();
 
       return;
     }
