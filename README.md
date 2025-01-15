@@ -13,8 +13,8 @@ A p5 (With Matter js) based recreation of one level of the Angry Birds game for 
 
 ![screenshot1](./img/init.jpg)
 ![screenshot2](./img/gameplay.jpg)
-![screenshot3](./img/pause.jpg.jpg)
-![screenshot4](./img/final.jpg.jpg)
+![screenshot3](./img/pause.jpg)
+![screenshot4](./img/final.jpg)
 
 ## How to run
 
