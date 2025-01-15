@@ -118,8 +118,8 @@ function mousePressed() {
       if (
         mouseX > width / 2 - centerButtonSize / 2 &&
         mouseX < width / 2 + centerButtonSize / 2 &&
-        mouseY > (height * 2) / 3 - centerButtonSize  &&
-        mouseY < (height * 2) / 3 + centerButtonSize 
+        mouseY > (height * 2) / 3 - centerButtonSize &&
+        mouseY < (height * 2) / 3 + centerButtonSize
       ) {
         if (game.state === GAME_STATUS.LOST || game.state === GAME_STATUS.WON) {
           game.resetGame();
@@ -310,12 +310,10 @@ class AngryBirds {
   }
 
   resetGame() {
-    console.log("reset");
     this.game.clear();
     this.game = new Game(width, height, birdsLevel);
     this.state = GAME_STATUS.PLAYING;
     this.isPaused = false;
-    console.log(this.game);
   }
 
   startGame() {
@@ -327,7 +325,6 @@ class AngryBirds {
   }
 
   continue() {
-    console.log("continue");
     if (this.state == GAME_STATUS.PAUSED) {
       this.game.unpause();
     }
@@ -379,19 +376,10 @@ class AngryBirds {
     }
 
     if (this.state == GAME_STATUS.PLAYING) {
-      Engine.update(engine);
+      Engine.update(engine, 9);
 
       this.game.update();
     }
-
-    // Lose condition: last bird used and stopped or out of bounds
-    // let lastBirdInactive =
-    //   bird.length === 1 &&
-    //   slingshot.attached() == null &&
-    //   (bird[0].stop() ||
-    //     bird[0].body.position.x > width ||
-    //     bird[0].body.position.x < 0 ||
-    //     bird[0].body.position.y > height);
   }
 
   draw() {
@@ -420,35 +408,14 @@ class AngryBirds {
 
     this.game.draw();
     this.ground.show();
-    // Add semi-transparent overlay when paused
-    // if (this.state == GAME_STATUS.PAUSED) {
-    //   push();
-    //   fill(0, 0, 0, 127);
-    //   rect(0, 0, width, height);
-    //   pop();
-    // }
 
-    // // Draw pause/unpause button
-    // push();
-    // imageMode(CENTER);
-    // const buttonSize = 50;
-    // const buttonX = width - buttonSize - 20;
-    // const buttonY = buttonSize + 20;
-
-    // if (isPaused) {
-    //   image(unpauseImg, buttonX, buttonY, buttonSize, buttonSize);
-    // } else {
-    //   image(pauseImg, buttonX, buttonY, buttonSize, buttonSize);
-    // }
-    // pop();
     if (this.state == GAME_STATUS.PLAYING) {
       push();
       imageMode(CENTER);
       const buttonSize = 90;
       const buttonX = width - buttonSize;
       const buttonY = buttonSize;
-      // image(this.pauseImg, buttonX, buttonY, buttonSize, buttonSize);
-      //RESET BUTTON (DAVID)
+      //Draw reset image
       image(
         this.retryImg,
         buttonX - 1.2 * buttonSize,
@@ -477,9 +444,6 @@ class AngryBirds {
       textAlign(CENTER, CENTER);
       fill(255);
       switch (this.state) {
-        // case GAME_STATUS.INIT:
-        //   text("LEVEL 1", width / 2, height / 3 - height / 4);
-        //   break;
         case GAME_STATUS.PAUSED:
           text("LEVEL PAUSED!", width / 2, height / 3 - height / 4);
           text("Current progress", width / 2, height / 2);

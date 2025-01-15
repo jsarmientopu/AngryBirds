@@ -26,7 +26,6 @@ function convtoLIFETIME(value) {
 class Entity {
   constructor(x, y, r, img, options) {
     this.body = Bodies.circle(x, y, r, { ...options, restitution: 0.2 });
-    // Body.setMass(this.body, 2);
     World.add(world, this.body);
     this.img = img;
     this.status = STATUS.IDLE;
@@ -259,10 +258,6 @@ class SlingShot {
   }
 
   fly(mc, birds, map) {
-    // console.log("P", this.sling.bodyB);
-    // console.log("P", mc.mouse.button === -1);
-    // console.log("P", this.sling.bodyB.position, this.sling.pointA);
-    // console.log("P", this.sling.bodyB.position.x > this.sling.pointA.x + 1);
     if (
       this.sling.bodyB &&
       mc.mouse.button === -1 &&
@@ -284,13 +279,9 @@ class SlingShot {
       this.delayReappear = 1;
     }
 
-    console.log(this.delayReappear);
-
     if (this.delayReappear > 0) {
-      console.log(this.delayReappear);
       this.delayReappear++;
 
-      console.log(this.delayReappear);
       if (this.delayReappear > 100) {
         let birds_0 = birds[0];
         birds.splice(0, 1);
@@ -385,16 +376,15 @@ class Map {
   }
 
   loadEntities() {
-    // this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
-    // this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
-    // this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
-    this.pigs.push(new Pig(this.center.x - 300, this.center.y - 30, 30, "pig"));
-    // this.pigs.push(
-    //   new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
-    // );
-    // this.pigs.push(
-    //   new Pig(this.center.x + 195, this.center.y - 190, 30, "pig")
-    // );
+    this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
+    this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
+    this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
+    this.pigs.push(
+      new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
+    );
+    this.pigs.push(
+      new Pig(this.center.x + 195, this.center.y - 190, 30, "pig")
+    );
     for (let pig of this.pigs) {
       this.life += pig.life;
     }
@@ -508,13 +498,11 @@ class Map {
         c.bodyB.circleRadius != 0
           ? this.pigs.filter((x) => x.body == c.bodyB)[0]
           : this.boxes.filter((x) => x.body == c.bodyB)[0];
-      // console.log(obj1, obj2);
       if (obj1 && obj2) {
         let damage = max(
           Vector.magnitude(Vector.sub(obj1.lastVelocity, c.tangent)),
           Vector.magnitude(Vector.sub(obj2.lastVelocity, c.tangent))
         );
-        // console.log("DAÑOS", obj1, damage);
         if (obj1 instanceof Pig && damage > gap / 4) {
           obj1.life -= damage / (gap * obj1.img.includes("king") ? 4 : 3);
           if (obj1.life <= 0) {
@@ -524,7 +512,6 @@ class Map {
         }
         if (obj2 instanceof Pig && damage > gap / 4) {
           obj2.life -= damage / (gap * obj2.img.includes("king") ? 4 : 3);
-          // console.log("dañ2o", obj1, damage);
           if (obj2.life <= 0) {
             this.removePig(obj2.body);
             obj2.clear();
@@ -564,7 +551,6 @@ class Map {
         pig.clear();
       }
     } else if (damage > gap && box) {
-      // console.log("daño", damage, damage / (gap * 2));
       if (box.status >= box.life) {
         this.removeBox(box.body);
         World.remove(world, box.body);
@@ -610,7 +596,6 @@ class Map {
 
   removePig(pig) {
     let index;
-    console.log([...this.pigs]);
     for (let i = 0; i < this.pigs.length; i++) {
       if (this.pigs[i].body == pig) {
         index = i;
@@ -618,7 +603,6 @@ class Map {
       }
     }
     this.pigs.splice(index, 1);
-    console.log(this.pigs);
   }
 
   getProgress() {
