@@ -66,35 +66,66 @@ function draw() {
 
 // Add this new function to handle mouse clicks
 function mousePressed() {
-  if (game.state != GAME_STATUS.PLAYING) {
-    const buttonSize2 = 90;
+  console.log(game.state)
+  if (game.state === GAME_STATUS.MENU) {
+    // Existing menu button logic
+    const playButtonSize = 313;
+    const playButtonX = width / 2;
+    const playButtonY = height * 0.65;
+    
     if (
-      mouseX > width / 2 - buttonSize2 / 2 &&
-      mouseX < width / 2 + buttonSize2 / 2 &&
-      mouseY > (height * 2) / 3 - buttonSize2 / 2 &&
-      mouseY < (height * 2) / 3 + buttonSize2 / 2
+      mouseX > playButtonX - playButtonSize / 2 &&
+      mouseX < playButtonX + playButtonSize / 2 &&
+      mouseY > playButtonY - playButtonSize / 2 &&
+      mouseY < playButtonY + playButtonSize / 2
     ) {
-      console.log("rese");
-      if (game.state == GAME_STATUS.LOST || game.state == GAME_STATUS.WON) {
-        game.resetGame();
-      } else {
-        game.continue();
+      game.startGame();
+    }
+  } else {
+    // Handle retry button click (always visible)
+    const buttonSize = 90;
+    const retryX = width - (2.2 * buttonSize); // Position for retry button
+    const retryY = buttonSize;
+
+    if (
+      mouseX > retryX - buttonSize / 2 &&
+      mouseX < retryX + buttonSize / 2 &&
+      mouseY > retryY - buttonSize / 2 &&
+      mouseY < retryY + buttonSize / 2
+    ) {
+      game.resetGame();
+      return;
+    }
+
+    // Handle pause/continue button
+    const pauseX = width - buttonSize;
+    const pauseY = buttonSize;
+    
+    if (
+      mouseX > pauseX - buttonSize / 2 &&
+      mouseX < pauseX + buttonSize / 2 &&
+      mouseY > pauseY - buttonSize / 2 &&
+      mouseY < pauseY + buttonSize / 2
+    ) {
+      game.click();
+    }
+
+    // Handle win/lose/pause state buttons
+    if (game.state !== GAME_STATUS.PLAYING) {
+      const centerButtonSize = 90;
+      if (
+        mouseX > width / 2 - centerButtonSize / 2 &&
+        mouseX < width / 2 + centerButtonSize / 2 &&
+        mouseY > (height * 2) / 3 - centerButtonSize / 2 &&
+        mouseY < (height * 2) / 3 + centerButtonSize / 2
+      ) {
+        if (game.state === GAME_STATUS.LOST || game.state === GAME_STATUS.WON) {
+          game.resetGame();
+        } else {
+          game.continue();
+        }
       }
     }
-  }
-
-  const buttonSize = 50;
-  const buttonX = width - buttonSize - 20;
-  const buttonY = buttonSize + 20;
-
-  // Check if click is within button bounds
-  if (
-    mouseX > buttonX - buttonSize / 2 &&
-    mouseX < buttonX + buttonSize / 2 &&
-    mouseY > buttonY - buttonSize / 2 &&
-    mouseY < buttonY + buttonSize / 2
-  ) {
-    game.click();
   }
 }
 
@@ -104,6 +135,7 @@ const GAME_STATUS = Object.freeze({
   PAUSED: "PAUSED",
   WON: "WON",
   LOST: "LOST",
+  MENU: "MENU",
 });
 
 class Game {
@@ -249,11 +281,16 @@ class AngryBirds {
     this.game = new Game(width, height, birdsLevel);
 
     this.starAnimationStart = 0;
-
-    this.state = GAME_STATUS.INIT;
-    // this.state = GAME_STATUS.PLAYING;
-
+    this.state = GAME_STATUS.MENU;
     this.loadImages();
+
+
+    this.logoScale = 0;
+    this.playButtonOpacity = 0;
+    this.menuAnimationStarted = false;
+    
+    // Add button states
+    this.isPaused = false;
   }
 
   loadImages() {
@@ -270,6 +307,8 @@ class AngryBirds {
     this.retryImg = loadImage("img/retry.png");
     this.pauseImg = loadImage("img/pause.png");
     this.unpauseImg = loadImage("img/unpause.png");
+    this.logoImg = loadImage("img/logo.png");
+    this.playImg = loadImage("img/play.png");
   }
 
   resetGame() {
@@ -277,7 +316,16 @@ class AngryBirds {
     this.game.clear();
     this.game = new Game(width, height, birdsLevel);
     this.state = GAME_STATUS.PLAYING;
+    this.isPaused = false;
     console.log(this.game);
+  }
+
+  startGame() {
+    this.state = GAME_STATUS.PLAYING;
+    this.logoScale = 0;
+    this.playButtonOpacity = 0;
+    this.menuAnimationStarted = false;
+    this.isPaused = false;
   }
 
   continue() {
@@ -286,16 +334,35 @@ class AngryBirds {
       this.game.unpause();
     }
     this.state = GAME_STATUS.PLAYING;
+    this.isPaused = false;
   }
 
   click() {
     if (this.state == GAME_STATUS.PLAYING) {
       this.game.pause();
       this.state = GAME_STATUS.PAUSED;
+      this.isPaused = true;
     }
   }
 
   update() {
+    if (this.state === GAME_STATUS.MENU) {
+      if (!this.menuAnimationStarted) {
+        this.menuAnimationStarted = true;
+        this.logoScale = 0;
+        this.playButtonOpacity = 0;
+      }
+      
+      // Animate logo and play button
+      if (this.logoScale < 1) {
+        this.logoScale += 0.05;
+      } else if (this.playButtonOpacity < 255) {
+        this.playButtonOpacity += 10;
+      }
+      
+      return;
+    }
+
     // Win condition: all pigs are eliminated
     if (
       this.game.map.pigs.length <= 0 &&
@@ -330,6 +397,28 @@ class AngryBirds {
   }
 
   draw() {
+    if (this.state === GAME_STATUS.MENU) {
+      // Draw menu background
+      background(spriteSheet.getSprite("sky"));
+      
+      // Draw logo with animation
+      push();
+      imageMode(CENTER);
+      translate(width / 2, height * 0.35);
+      scale(this.logoScale);
+      image(this.logoImg, 0, 0, width * 0.6, width * 0.6 * 0.3); // Adjust size ratio as needed
+      pop();
+      
+      // Draw play button with fade-in
+      push();
+      imageMode(CENTER);
+      tint(255, this.playButtonOpacity);
+      image(this.playImg, width / 2, height * 0.65, 447, 313);
+      pop();
+      
+      return;
+    }
+
     this.game.draw();
     // Add semi-transparent overlay when paused
     // if (this.state == GAME_STATUS.PAUSED) {
@@ -358,11 +447,20 @@ class AngryBirds {
       const buttonSize = 90;
       const buttonX = width - buttonSize;
       const buttonY = buttonSize;
-      image(this.pauseImg, buttonX, buttonY, buttonSize, buttonSize);
+      // image(this.pauseImg, buttonX, buttonY, buttonSize, buttonSize);
       //RESET BUTTON (DAVID)
       image(
-        this.pauseImg,
+        this.retryImg,
         buttonX - 1.2 * buttonSize,
+        buttonY,
+        buttonSize,
+        buttonSize
+      );
+
+      // Draw pause/unpause button based on state
+      image(
+        this.isPaused ? this.unpauseImg : this.pauseImg,
+        buttonX,
         buttonY,
         buttonSize,
         buttonSize
@@ -379,9 +477,9 @@ class AngryBirds {
       textAlign(CENTER, CENTER);
       fill(255);
       switch (this.state) {
-        case GAME_STATUS.INIT:
-          text("LEVEL 1", width / 2, height / 3 - height / 4);
-          break;
+        // case GAME_STATUS.INIT:
+        //   text("LEVEL 1", width / 2, height / 3 - height / 4);
+        //   break;
         case GAME_STATUS.PAUSED:
           text("LEVEL PAUSED!", width / 2, height / 3 - height / 4);
           break;
@@ -395,23 +493,23 @@ class AngryBirds {
 
       const buttonSize = 90;
       switch (this.state) {
-        case GAME_STATUS.INIT:
-          text("LEVEL 1", width / 2, height / 3 - height / 4);
-          // Draw retry button
-          image(
-            this.retryImg,
-            width / 2 - buttonSize / 2,
-            (height * 2) / 3,
-            buttonSize,
-            buttonSize
-          );
-          pop();
-          break;
+        // case GAME_STATUS.INIT:
+        //   text("LEVEL 1", width / 2, height / 3 - height / 4);
+        //   // Draw retry button
+        //   image(
+        //     this.retryImg,
+        //     width / 2 - buttonSize / 2,
+        //     (height * 2) / 3,
+        //     buttonSize,
+        //     buttonSize
+        //   );
+        //   pop();
+        //   break;
         case GAME_STATUS.PAUSED:
           text("LEVEL PAUSED!", width / 2, height / 3 - height / 4);
           // Draw retry button
           image(
-            this.retryImg,
+            this.unpauseImg,
             width / 2 - buttonSize / 2,
             (height * 2) / 3,
             buttonSize,
@@ -420,16 +518,12 @@ class AngryBirds {
           pop();
           break;
         default:
-          console.log(this.starAnimationStart);
-          // Calculate positions for stars
           const starSize = 150;
           const starSpacing = starSize * 1.2;
           const startX = width / 2 - 1.5 * starSpacing;
           const starY = height / 2 - height / 4;
 
-          // Draw stars with animation
           const currentTime = millis();
-
           const progress = this.game.progress();
 
           for (let i = 0; i < 3; i++) {
