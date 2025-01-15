@@ -1,4 +1,4 @@
-# Anfry Birds
+# Angry Birds
 
 A p5 (With Matter js) based recreation of one level of the Angry Birds game for the Visual Computing - 2024-2 class at Universidad Nacional de Colombia.
 
