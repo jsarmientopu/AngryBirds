@@ -32,6 +32,7 @@ const STAR_ANIMATION_DELAY = 300;
 function preload() {
   spriteSheet = new SpriteSheet();
   spriteSheet.loadSprites();
+  font = loadFont("/assets/angrybirds-regular.ttf");
 }
 
 function setup() {
@@ -54,6 +55,8 @@ function setup() {
   //Colision detector
   detector = Detector.create();
   World.add(world, detector);
+
+  textFont(font);
 }
 
 function draw() {
@@ -66,13 +69,13 @@ function draw() {
 
 // Add this new function to handle mouse clicks
 function mousePressed() {
-  console.log(game.state)
+  console.log(game.state);
   if (game.state === GAME_STATUS.MENU) {
     // Existing menu button logic
     const playButtonSize = 313;
     const playButtonX = width / 2;
     const playButtonY = height * 0.65;
-    
+
     if (
       mouseX > playButtonX - playButtonSize / 2 &&
       mouseX < playButtonX + playButtonSize / 2 &&
@@ -84,7 +87,7 @@ function mousePressed() {
   } else {
     // Handle retry button click (always visible)
     const buttonSize = 90;
-    const retryX = width - (2.2 * buttonSize); // Position for retry button
+    const retryX = width - 2.2 * buttonSize; // Position for retry button
     const retryY = buttonSize;
 
     if (
@@ -100,7 +103,7 @@ function mousePressed() {
     // Handle pause/continue button
     const pauseX = width - buttonSize;
     const pauseY = buttonSize;
-    
+
     if (
       mouseX > pauseX - buttonSize / 2 &&
       mouseX < pauseX + buttonSize / 2 &&
@@ -140,8 +143,6 @@ const GAME_STATUS = Object.freeze({
 
 class Game {
   constructor(width, height, birdsLevel) {
-    this.ground = new Ground(width / 2, height - 75, width, 150);
-
     this.map = new Map(createVector((2 * width) / 3, height - 150));
 
     this.birdsLevel = birdsLevel;
@@ -238,7 +239,6 @@ class Game {
       b.clear();
     }
     this.map.clear();
-    this.ground.clear();
     this.slingshot.clear();
   }
 
@@ -271,24 +271,23 @@ class Game {
     this.slingshot.showUpperPart();
 
     this.map.show();
-
-    this.ground.show();
   }
 }
 
 class AngryBirds {
   constructor(width, height, birdsLevel) {
+    this.ground = new Ground(width / 2, height - 75, width, 150);
+
     this.game = new Game(width, height, birdsLevel);
 
     this.starAnimationStart = 0;
     this.state = GAME_STATUS.MENU;
     this.loadImages();
 
-
     this.logoScale = 0;
     this.playButtonOpacity = 0;
     this.menuAnimationStarted = false;
-    
+
     // Add button states
     this.isPaused = false;
   }
@@ -352,14 +351,14 @@ class AngryBirds {
         this.logoScale = 0;
         this.playButtonOpacity = 0;
       }
-      
+
       // Animate logo and play button
       if (this.logoScale < 1) {
         this.logoScale += 0.05;
       } else if (this.playButtonOpacity < 255) {
         this.playButtonOpacity += 10;
       }
-      
+
       return;
     }
 
@@ -400,7 +399,7 @@ class AngryBirds {
     if (this.state === GAME_STATUS.MENU) {
       // Draw menu background
       background(spriteSheet.getSprite("sky"));
-      
+
       // Draw logo with animation
       push();
       imageMode(CENTER);
@@ -408,18 +407,20 @@ class AngryBirds {
       scale(this.logoScale);
       image(this.logoImg, 0, 0, width * 0.6, width * 0.6 * 0.3); // Adjust size ratio as needed
       pop();
-      
+
       // Draw play button with fade-in
       push();
       imageMode(CENTER);
       tint(255, this.playButtonOpacity);
       image(this.playImg, width / 2, height * 0.65, 447, 313);
       pop();
-      
+      this.ground.show();
+
       return;
     }
 
     this.game.draw();
+    this.ground.show();
     // Add semi-transparent overlay when paused
     // if (this.state == GAME_STATUS.PAUSED) {
     //   push();
@@ -482,6 +483,7 @@ class AngryBirds {
         //   break;
         case GAME_STATUS.PAUSED:
           text("LEVEL PAUSED!", width / 2, height / 3 - height / 4);
+          text("Current progress", width / 2, height / 2);
           break;
         case GAME_STATUS.WON:
           text("LEVEL CLEARED!", width / 2, height / 3 - height / 4);
@@ -492,21 +494,27 @@ class AngryBirds {
       }
 
       const buttonSize = 90;
-      switch (this.state) {
-        // case GAME_STATUS.INIT:
-        //   text("LEVEL 1", width / 2, height / 3 - height / 4);
-        //   // Draw retry button
-        //   image(
-        //     this.retryImg,
-        //     width / 2 - buttonSize / 2,
-        //     (height * 2) / 3,
-        //     buttonSize,
-        //     buttonSize
-        //   );
-        //   pop();
-        //   break;
-        case GAME_STATUS.PAUSED:
-          text("LEVEL PAUSED!", width / 2, height / 3 - height / 4);
+
+      const starSize = 150;
+      const starSpacing = starSize * 1.2;
+      const startX = width / 2 - 1.5 * starSpacing;
+      const starY = height / 2 - height / 4;
+
+      const currentTime = millis();
+      const progress = this.game.progress();
+
+      for (let i = 0; i < 3; i++) {
+        if (currentTime - this.starAnimationStart > i * STAR_ANIMATION_DELAY) {
+          image(
+            i < progress ? this.stars[i] : this.blackStars[i],
+            startX + i * starSpacing,
+            starY,
+            starSize,
+            starSize
+          );
+        }
+        // Draw retry button
+        if (this.state == GAME_STATUS.PAUSED) {
           // Draw retry button
           image(
             this.unpauseImg,
@@ -516,40 +524,16 @@ class AngryBirds {
             buttonSize
           );
           pop();
-          break;
-        default:
-          const starSize = 150;
-          const starSpacing = starSize * 1.2;
-          const startX = width / 2 - 1.5 * starSpacing;
-          const starY = height / 2 - height / 4;
-
-          const currentTime = millis();
-          const progress = this.game.progress();
-
-          for (let i = 0; i < 3; i++) {
-            if (
-              currentTime - this.starAnimationStart >
-              i * STAR_ANIMATION_DELAY
-            ) {
-              image(
-                i < progress ? this.stars[i] : this.blackStars[i],
-                startX + i * starSpacing,
-                starY,
-                starSize,
-                starSize
-              );
-            }
-            // Draw retry button
-            image(
-              this.retryImg,
-              width / 2 - buttonSize / 2,
-              (height * 2) / 3,
-              buttonSize,
-              buttonSize
-            );
-            pop();
-          }
-          break;
+        } else {
+          image(
+            this.retryImg,
+            width / 2 - buttonSize / 2,
+            (height * 2) / 3,
+            buttonSize,
+            buttonSize
+          );
+          pop();
+        }
       }
     }
   }

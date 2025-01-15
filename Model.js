@@ -385,15 +385,16 @@ class Map {
   }
 
   loadEntities() {
-    this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
-    this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
-    this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
-    this.pigs.push(
-      new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
-    );
-    this.pigs.push(
-      new Pig(this.center.x + 195, this.center.y - 190, 30, "pig")
-    );
+    // this.pigs.push(new Pig(this.center.x, this.center.y - 35, 35, "kingPig"));
+    // this.pigs.push(new Pig(this.center.x - 195, this.center.y - 30, 30, "pig"));
+    // this.pigs.push(new Pig(this.center.x + 195, this.center.y - 30, 30, "pig"));
+    this.pigs.push(new Pig(this.center.x - 300, this.center.y - 30, 30, "pig"));
+    // this.pigs.push(
+    //   new Pig(this.center.x - 195, this.center.y - 190, 30, "pig")
+    // );
+    // this.pigs.push(
+    //   new Pig(this.center.x + 195, this.center.y - 190, 30, "pig")
+    // );
     for (let pig of this.pigs) {
       this.life += pig.life;
     }
@@ -576,12 +577,20 @@ class Map {
 
   stop() {
     for (let pig of this.pigs) {
-      if (Vector.magnitude(pig.body.velocity) > gap / 2) {
+      if (
+        Vector.magnitude(pig.body.velocity) > gap / 2 &&
+        pig.body.position.x > 0 &&
+        pig.body.position.x < width
+      ) {
         return false;
       }
     }
     for (let box of this.boxes) {
-      if (Vector.magnitude(box.body.velocity) > gap / 2) {
+      if (
+        Vector.magnitude(box.body.velocity) > gap / 2 &&
+        box.body.position.x > 0 &&
+        box.body.position.x < width
+      ) {
         return false;
       }
     }
