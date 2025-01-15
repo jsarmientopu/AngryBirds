@@ -69,7 +69,6 @@ function draw() {
 
 // Add this new function to handle mouse clicks
 function mousePressed() {
-  console.log(game.state);
   if (game.state === GAME_STATUS.MENU) {
     // Existing menu button logic
     const playButtonSize = 313;
@@ -86,7 +85,7 @@ function mousePressed() {
     }
   } else {
     // Handle retry button click (always visible)
-    const buttonSize = 90;
+    const buttonSize = 100;
     const retryX = width - 2.2 * buttonSize; // Position for retry button
     const retryY = buttonSize;
 
@@ -115,12 +114,12 @@ function mousePressed() {
 
     // Handle win/lose/pause state buttons
     if (game.state !== GAME_STATUS.PLAYING) {
-      const centerButtonSize = 90;
+      const centerButtonSize = 100;
       if (
         mouseX > width / 2 - centerButtonSize / 2 &&
         mouseX < width / 2 + centerButtonSize / 2 &&
-        mouseY > (height * 2) / 3 - centerButtonSize / 2 &&
-        mouseY < (height * 2) / 3 + centerButtonSize / 2
+        mouseY > (height * 2) / 3 - centerButtonSize  &&
+        mouseY < (height * 2) / 3 + centerButtonSize 
       ) {
         if (game.state === GAME_STATUS.LOST || game.state === GAME_STATUS.WON) {
           game.resetGame();
