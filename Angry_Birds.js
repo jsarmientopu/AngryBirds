@@ -249,7 +249,9 @@ class Game {
     this.updateCollisionDetector();
 
     //Identify collision bird in game
-    this.birds[0].update(this.map, this.slingshot);
+    for (let bird of this.birds) {
+      bird.update(this.map, this.slingshot);
+    }
 
     //Indetify collisions between boxes and pgis
     this.map.update();

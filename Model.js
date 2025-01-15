@@ -106,7 +106,7 @@ class Bird extends Entity {
         if (this.counter > 20) {
           this.status = STATUS.IDLE;
           this.counter = 0;
-          Body.applyForce(this.body, this.body.position, { x: 0, y: -0.05 });
+          Body.applyForce(this.body, this.body.position, { x: 0, y: -0.08 });
         }
         break;
       case STATUS.LOADED:
